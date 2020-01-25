@@ -12,9 +12,12 @@ from tqdm import tqdm
 
 class MatroidModel:
     TARGET_DIR = '/deep/group/haosheng/matroid'
-    def __init__(self, model_file):
+    def __init__(self, model_file, gpu=False):
         self.model_file = model_file
         self.load_matroid()
+        self.device = "/device:cpu:*"
+        if gpu:
+            self.device = "/device:gpu:*"
         self.create_tf_graph()
     
     def load_matroid(self):
@@ -39,11 +42,14 @@ class MatroidModel:
 
     def create_tf_graph(self):
         # Load model
-        self.sess = tf.Session()
-        with open(self.pb_file, 'rb') as f:
-            graph_def = tf.GraphDef()
-            graph_def.ParseFromString(f.read())
-            _ = tf.import_graph_def(graph_def, name='')
+        self.sess = tf.Session(config=tf.ConfigProto(allow_soft_placement=True, 
+                                                     log_device_placement=True))
+        with tf.device(self.device):
+            with open(self.pb_file, 'rb') as f:
+                graph_def = tf.GraphDef()
+                graph_def.ParseFromString(f.read())
+                ops = tf.import_graph_def(graph_def, name='')
+
         self.output_tensor = self.sess.graph.get_tensor_by_name(self.meta['outputs'][0]['name'] + ':0')
         self.input_tensor = self.sess.graph.get_tensor_by_name(self.meta['inputs'][0]['name'] + ':0')
     
