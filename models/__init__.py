@@ -1,4 +1,4 @@
-from .pretrained import *
+from .matroid import MatroidModel
 import argparse
 
 from util import Args
