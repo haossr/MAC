@@ -13,12 +13,13 @@ import time
 import fire
 
 
-def detect(split="train",
+def detect(split="val",
            root_path="sandbox",
-           year=2007,
+           year=2012,
            gpu=False):
+
     m = MatroidModel("Everyday-Objects.matroid", gpu)
-    voc_train = VOCDetection("~/data/voc/", image_set=split, download=True, year=year)
+    voc_train = VOCDetection("~/data/voc/", image_set=split, download=True, year=str(year))
     #voc_train = VOCDetection("/deep/group/haosheng/voc/", image_set=split)i
 
     GROUNDTRUTH_PATH = os.path.join("Object-Detection-Metrics", "groundtruths")
