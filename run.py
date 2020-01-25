@@ -15,12 +15,14 @@ import fire
 
 def detect(split="train",
            root_path="sandbox",
-           gpu=False)
+           year=2007,
+           gpu=False):
     m = MatroidModel("Everyday-Objects.matroid", gpu)
-    voc_train = VOCDetection("/deep/group/haosheng/voc/", image_set=split)
+    voc_train = VOCDetection("~/data/voc/", image_set=split, download=True, year=year)
+    #voc_train = VOCDetection("/deep/group/haosheng/voc/", image_set=split)i
 
-    GROUNDTRUTH_PATH = os.path.join(root_path, split, "groundtruths")
-    PREDICTION_PATH = os.path.join(root_path, split, "detections")
+    GROUNDTRUTH_PATH = os.path.join("Object-Detection-Metrics", "groundtruths")
+    PREDICTION_PATH = os.path.join("Object-Detection-Metrics", "detections")
     os.makedirs(GROUNDTRUTH_PATH, exist_ok=True)
     os.makedirs(PREDICTION_PATH, exist_ok=True)
 
@@ -43,8 +45,8 @@ def detect(split="train",
             h, w = img.size
             for bbox, probs in pred:
                 xmin, ymin, xmax, ymax = bbox[0]*h, bbox[1]*w, bbox[2]*h, bbox[3]*w
-                name = sorted(probs, key=lambda x: x[1])[-1][0]
-                f.write(f"{name} {xmin:.0f} {ymin:.0f} {xmax:.0f} {ymax:.0f}\n")
+                name, confidence = sorted(probs, key=lambda x: x[1])[-1]
+                f.write(f"{name} {confidence} {xmin:.0f} {ymin:.0f} {xmax:.0f} {ymax:.0f}\n")
             
 def profile(gpu=False,
             n=100):

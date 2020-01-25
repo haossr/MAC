@@ -11,7 +11,7 @@ from tqdm import tqdm
 
 
 class MatroidModel:
-    TARGET_DIR = '/deep/group/haosheng/matroid'
+    TARGET_DIR = '~/tmp/matroid'
     def __init__(self, model_file, gpu=False):
         self.model_file = model_file
         self.load_matroid()
