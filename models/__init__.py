@@ -1,13 +1,14 @@
+from .efficientdet import EfficientDet
+from .efficientdet import EFFICIENTDET
 from .matroid import MatroidModel
-import argparse
-
-from util import Args
 
 
-def get_model(model_args):
-    model_args_ = model_args
+def get_model(args):
+    model = EfficientDet(num_classes=args.num_class,
+                         network=args.model,
+                         W_bifpn=EFFICIENTDET[args.model]['W_bifpn'],
+                         D_bifpn=EFFICIENTDET[args.model]['D_bifpn'],
+                         D_class=EFFICIENTDET[args.model]['D_class']
+                         )
+    return model
 
-    if isinstance(model_args, argparse.Namespace):
-        model_args_ = Args(vars(model_args))
-
-    return globals().copy()[model_args_.get("model")](model_args_)
