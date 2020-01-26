@@ -16,11 +16,14 @@ import fire
 def detect(split="val",
            root_path="sandbox",
            year=2012,
-           gpu=False):
+           gpu=True):
 
     m = MatroidModel("Everyday-Objects.matroid", gpu)
-    voc_train = VOCDetection("~/data/voc/", image_set=split, download=True, year=str(year))
-    #voc_train = VOCDetection("/deep/group/haosheng/voc/", image_set=split)i
+    voc_train = VOCDetection("~/data/voc/",
+                             image_set=split,
+                             download=True,
+                             year=str(year))
+    # voc_train = VOCDetection("/deep/group/haosheng/voc/", image_set=split)i
 
     GROUNDTRUTH_PATH = os.path.join("Object-Detection-Metrics", "groundtruths")
     PREDICTION_PATH = os.path.join("Object-Detection-Metrics", "detections")
@@ -45,22 +48,27 @@ def detect(split="val",
             pred = m.predict(img)
             h, w = img.size
             for bbox, probs in pred:
-                xmin, ymin, xmax, ymax = bbox[0]*h, bbox[1]*w, bbox[2]*h, bbox[3]*w
+                xmin, ymin, xmax, ymax = bbox[0] * \
+                    h, bbox[1]*w, bbox[2]*h, bbox[3]*w
                 name, confidence = sorted(probs, key=lambda x: x[1])[-1]
-                f.write(f"{name} {confidence} {xmin:.0f} {ymin:.0f} {xmax:.0f} {ymax:.0f}\n")
-            
-def profile(gpu=False,
+                f.write(
+                    f"{name} {confidence} {xmin:.0f} {ymin:.0f} {xmax:.0f} {ymax:.0f}\n")
+
+
+def profile(gpu=True,
+            split="val",
+            year=2012,
             n=100):
     m = MatroidModel("Everyday-Objects.matroid", gpu)
-    voc_train = VOCDetection("/deep/group/haosheng/voc/", image_set="train")
+    voc_train = VOCDetection(
+        "~/data/voc/", image_set=split, download=True, year=str(year))
     start = time.time()
     for i in tqdm(range(n)):
-        img, target = voc_train[i]
+        img, _ = voc_train[i]
         m.predict(img)
     end = time.time()
-    print(f"Time used: {(end - start) / n:.2f} on {m.device}")
+    print(f"Time used: {(end - start) / n:.4f} on [{m.device}]")
 
-    
+
 if __name__ == "__main__":
     fire.Fire()
- 

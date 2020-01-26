@@ -72,7 +72,7 @@ def collater(data):
     annots = [s['annot'] for s in data]
     scales = [s['scale'] for s in data]
 
-    imgs = torch.from_numpy(np.stack(imgs, axis=0))
+    imgs = torch.stack(imgs, axis=0)
 
     max_num_annots = max(annot.shape[0] for annot in annots)
 
@@ -86,8 +86,6 @@ def collater(data):
                     annot_padded[idx, :annot.shape[0], :] = annot
     else:
         annot_padded = torch.ones((len(annots), 1, 5)) * -1
-
-    imgs = imgs.permute(0, 3, 1, 2)
 
     return (imgs, torch.FloatTensor(annot_padded))
 
@@ -134,7 +132,7 @@ class Annotator:
 class Resizer(object):
     def __call__(self, sample, common_size=512):
         image, annots = sample['img'], sample['annot']
-        image = torchvision.transforms.functional.resize(image, common_size)
+        image = torchvision.transforms.functional.resize(image, (common_size, common_size))
         height, width = image.size
         if height > width:
             scale = common_size / height
