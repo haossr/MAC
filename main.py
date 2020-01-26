@@ -40,11 +40,11 @@ class Model(pl.LightningModule):
         loss = self.forward(batch) 
         return {'val_loss': loss}
 
-    #def validation_end(self, outputs):
-    #    avg_loss = torch.stack([x['val_loss'] for x in outputs]).mean()
-    #    return {'val_loss': avg_loss,
-    #            'log': {'avg_val_loss': avg_loss},
-    #            'progress_bar': {'avg_val_loss': avg_loss}}
+    def validation_end(self, outputs):
+        avg_loss = torch.stack([x['val_loss'] for x in outputs]).mean()
+        return {'val_loss': avg_loss,
+               'log': {'_val_loss': avg_loss},
+                'progress_bar': {'avg_val_loss': avg_loss}}
 
     def test_step(self, batch, batch_nb):
         x, y = batch
@@ -93,7 +93,8 @@ def train(save_dir="./sandbox",
           distributed_backend="ddp",
           gradient_clip_val=0.5,
           max_nb_epochs=3,
-          train_percent_check=1.0,
+          train_percent_check=1,
+          val_percent_check=1,
           tb_path="./sandbox/tb",
           loss_fn="BCE",
           ):
@@ -135,6 +136,7 @@ def train(save_dir="./sandbox",
                       log_save_interval=log_save_interval,
                       gradient_clip_val=gradient_clip_val,
                       train_percent_check=train_percent_check,
+                      val_percent_check=val_percent_check,
                       max_nb_epochs=max_nb_epochs)
     trainer.fit(m)
 
