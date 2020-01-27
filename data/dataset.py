@@ -4,11 +4,12 @@ from PIL import Image
 from torchvision.datasets import VOCDetection
 from torchvision.transforms import Compose
 
-from .augmentation import Resizer, Normalizer, Augmenter, Annotator, ToTensorDict
+from .augmentation import (Resizer, Normalizer,
+                           Augmenter, Annotator, ToTensorDict)
 
 
 class VOC(torch.utils.data.Dataset):
-    def __init__(self, root="~/data/voc/", 
+    def __init__(self, root="~/data/voc/",
                  year=2007, split="train", transforms=None):
         self._data = VOCDetection(root=root,
                                   image_set=split,
@@ -29,4 +30,4 @@ class VOC(torch.utils.data.Dataset):
         batch = {"img": image, "annot": target}
         if self._transforms is not None:
             batch = self._transforms(batch)
-        return batch 
+        return batch

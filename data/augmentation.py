@@ -5,6 +5,8 @@ import torch
 import numpy as np
 import cv2
 
+from util.constants import *
+
 
 def get_augumentation(phase, width=512, height=512, min_area=0., min_visibility=0.):
     list_transforms = []
@@ -87,35 +89,11 @@ def collater(data):
     else:
         annot_padded = torch.ones((len(annots), 1, 5)) * -1
 
-    return (imgs, torch.FloatTensor(annot_padded))
+    return (imgs, torch.FloatTensor(annot_padded), torch.FloatTensor(scales))
 
 
 class Annotator:
     """Parse the annotation"""
-    LABELS = ['aeroplane',
-              'bicycle',
-              'bird',
-              'boat',
-              'bottle',
-              'bus',
-              'car',
-              'cat',
-              'chair',
-              'cow',
-              'diningtable',
-              'dog',
-              'horse',
-              'motorbike',
-              'person',
-              'pottedplant',
-              'sheep',
-              'sofa',
-              'train',
-              'tvmonitor']
-
-    def __init__(self):
-        self.label_map = {l: i for i, l in enumerate(self.LABELS)}
-
     def __call__(self, target):
         annotation = target['annotation']
         objs = annotation['object']
@@ -123,7 +101,7 @@ class Annotator:
         if not isinstance(objs, list):
             objs = [objs]
         for obj in objs:
-            label = self.label_map[obj['name']]
+            label = VOC_NAME2LABEL[obj['name']]
             bbox = [int(obj['bndbox'][key]) for key in ['xmin', 'ymin', 'xmax', 'ymax']]
             annots.append(bbox + [label])
         return np.array(annots).astype(np.float32)

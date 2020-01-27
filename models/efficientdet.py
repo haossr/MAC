@@ -1,7 +1,6 @@
 import torch
 import torch.nn as nn
 import math
-from torchvision.ops import nms
 
 from .efficientnet import EfficientNet
 from .bifpn import BIFPN
@@ -100,36 +99,40 @@ class EfficientDet(nn.Module):
         self.freeze_bn()
         self.criterion = FocalLoss()
 
-    def forward(self, inputs):
-        if self.is_training:
-            inputs, annotations = inputs
-        else:
-            inputs = inputs
+    def detect(self, inputs):
         x = self.extract_feat(inputs)
         outs = self.bbox_head(x)
         classification = torch.cat([out for out in outs[0]], dim=1)
         regression = torch.cat([out for out in outs[1]], dim=1)
         anchors = self.anchors(inputs)
-        if self.is_training:
-            return self.criterion(classification, regression, anchors, annotations)
-        else:
-            transformed_anchors = self.regressBoxes(anchors, regression)
-            transformed_anchors = self.clipBoxes(transformed_anchors, inputs)
-            scores = torch.max(classification, dim=2, keepdim=True)[0]
-            scores_over_thresh = (scores > self.threshold)[0, :, 0]
 
-            if scores_over_thresh.sum() == 0:
-                print('No boxes to NMS')
-                # no boxes to NMS, just return
-                return [torch.zeros(0), torch.zeros(0), torch.zeros(0, 4)]
-            classification = classification[:, scores_over_thresh, :]
-            transformed_anchors = transformed_anchors[:, scores_over_thresh, :]
-            scores = scores[:, scores_over_thresh, :]
-            anchors_nms_idx = nms(
-                transformed_anchors[0, :, :], scores[0, :, 0], iou_threshold=self.iou_threshold)
-            nms_scores, nms_class = classification[0, anchors_nms_idx, :].max(
-                dim=1)
-            return [nms_scores, nms_class, transformed_anchors[0, anchors_nms_idx, :]]
+        transformed_anchors = self.regressBoxes(anchors, regression)
+        transformed_anchors = self.clipBoxes(transformed_anchors, inputs)
+        scores = torch.max(classification, dim=2, keepdim=True)[0]
+        scores_over_thresh = (scores > self.threshold)[0, :, 0]
+
+        if scores_over_thresh.sum() == 0:
+            print('No boxes to NMS')
+            # no boxes to NMS, just return
+            return [torch.zeros(0), torch.zeros(0), torch.zeros(0, 4)]
+        classification = classification[:, scores_over_thresh, :]
+        transformed_anchors = transformed_anchors[:, scores_over_thresh, :]
+        scores = scores[:, scores_over_thresh, :]
+        anchors_nms_idx = torch.ops.torchvision.nms(
+            transformed_anchors[0, :, :],
+            scores[0, :, 0],
+            self.iou_threshold)
+        nms_scores, nms_class = classification[0, anchors_nms_idx, :].max(dim=1)
+        return [nms_scores, nms_class, transformed_anchors[0, anchors_nms_idx, :]]
+
+    def forward(self, inputs):
+        inputs, annotations = inputs
+        x = self.extract_feat(inputs)
+        outs = self.bbox_head(x)
+        classification = torch.cat([out for out in outs[0]], dim=1)
+        regression = torch.cat([out for out in outs[1]], dim=1)
+        anchors = self.anchors(inputs)
+        return self.criterion(classification, regression, anchors, annotations)
 
     def freeze_bn(self):
         '''Freeze BatchNorm layers.'''

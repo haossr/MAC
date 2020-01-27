@@ -6,8 +6,26 @@
 IMAGENET_MEAN = [0.485, 0.456, 0.406]
 IMAGENET_STD = [0.229, 0.224, 0.225]
 
-# US latitude/longitude boundaries
-US_N = 49.4
-US_S = 24.5
-US_E = -66.93
-US_W = -124.784
+# VOC Labels
+VOC_NAMES = ['aeroplane',
+             'bicycle',
+             'bird',
+             'boat',
+             'bottle',
+             'bus',
+             'car',
+             'cat',
+             'chair',
+             'cow',
+             'diningtable',
+             'dog',
+             'horse',
+             'motorbike',
+             'person',
+             'pottedplant',
+             'sheep',
+             'sofa',
+             'train',
+             'tvmonitor']
+VOC_LABEL2NAME = {i: n for i, n in enumerate(VOC_NAMES)}
+VOC_NAME2LABEL = {n: i for i, n in enumerate(VOC_NAMES)}
