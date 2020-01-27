@@ -62,14 +62,14 @@ class MatroidModel:
         
         # Process output
         if self.meta['detector_type'] == 'object_localization':
-            detection = []
+            boxes, probs = [], []
             if output[0, 0, 0] < 0:
-                return [] 
+                return np.array([]), np.array([])
                 #print('no object detected')
             for j in range(output.shape[1]):
                 # a valid detection
                 if output[0, j, 0] >= 0.0:
-                    bbox = output[0, j, :4]
-                    prob = list(zip(self.meta['label'], output[0, j, 4:]))
-                    detection.append((bbox.tolist(), prob))
-        return detection
+                    boxes.append(output[0, j, :4])
+                    prob = list(output[0, j, 4:])
+                    probs.append(prob)
+        return np.array(boxes), np.array(probs)

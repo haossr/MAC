@@ -6,10 +6,19 @@ This is a starter repo providing skeleton of ML projects for image classificatio
 
 ## Quick start
 ### Train and save a model 
-`python main.py train --<hyperparameter> value`
+`python main.py train --exp_name="ED0"`
 
-### Test existing model 
-`python main.py test --checkpoint_path <path to checkpoint>`
+### Profile the model 
+- MatroidModel
+`python run.py profile --n=100`
+- EfficientDet
+`python run.py profile --n=100 --gpu --network="efficientdet-d7` 
+
+### Calculate the mAP 
+```
+python run.py detect --gpu
+cd Object-Detection-Metrics && python pascalvoc.py
+```
 
 ## Useful links 
 - [Negative sampling (Google Map API)](https://github.com/stanfordmlgroup/old-starter/blob/master/preprocess/get_negatives.py)

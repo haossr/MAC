@@ -108,7 +108,8 @@ class EfficientDet(nn.Module):
 
         transformed_anchors = self.regressBoxes(anchors, regression)
         transformed_anchors = self.clipBoxes(transformed_anchors, inputs)
-        scores = torch.max(classification, dim=2, keepdim=True)[0]
+        return transformed_anchors, classification 
+
         scores_over_thresh = (scores > self.threshold)[0, :, 0]
 
         if scores_over_thresh.sum() == 0:

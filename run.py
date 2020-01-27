@@ -8,9 +8,13 @@ import zipfile
 import shutil
 import json
 from tqdm import tqdm
-from models import MatroidModel
 import time
 import fire
+
+from models import MatroidModel, EfficientDet, EFFICIENTDET
+from data import VOC
+from util import nms
+from util.constants import *
 
 
 def detect(split="val",
@@ -18,7 +22,7 @@ def detect(split="val",
            year=2012,
            gpu=True):
 
-    m = MatroidModel("Everyday-Objects.matroid", gpu)
+    m = MatroidModel("matroid/Everyday-Objects.matroid", gpu)
     voc_train = VOCDetection("~/data/voc/",
                              image_set=split,
                              download=True,
@@ -45,12 +49,14 @@ def detect(split="val",
 
         # Prediction
         with open(os.path.join(PREDICTION_PATH, file_name), "w") as f:
-            pred = m.predict(img)
+            boxes, probs = m.predict(img)
+            preds = nms(boxes, probs)
+            
             h, w = img.size
-            for bbox, probs in pred:
+            for label, confidence, bbox in preds:
                 xmin, ymin, xmax, ymax = bbox[0] * \
                     h, bbox[1]*w, bbox[2]*h, bbox[3]*w
-                name, confidence = sorted(probs, key=lambda x: x[1])[-1]
+                name = VOC_LABEL2NAME[label]
                 f.write(
                     f"{name} {confidence} {xmin:.0f} {ymin:.0f} {xmax:.0f} {ymax:.0f}\n")
 
@@ -59,15 +65,43 @@ def profile(gpu=True,
             split="val",
             year=2012,
             n=100):
-    m = MatroidModel("Everyday-Objects.matroid", gpu)
+    m = MatroidModel("matroid/Everyday-Objects.matroid", gpu)
     voc_train = VOCDetection(
         "~/data/voc/", image_set=split, download=True, year=str(year))
-    start = time.time()
+    time_used = 0
     for i in tqdm(range(n)):
         img, _ = voc_train[i]
+        start = time.time()
         m.predict(img)
-    end = time.time()
-    print(f"Time used: {(end - start) / n:.4f} on [{m.device}]")
+        end = time.time()
+        time_used += (end-start)
+    print(f"Time used: {time_used / n * 1000:.2f}(ms) on [{m.device}]")
+
+
+def profileED(gpu=True,
+              split="val",
+              network="efficientdet-d0",
+              year=2012,
+              n=100):
+    m = EfficientDet(num_classes=20,
+                     network=network,
+                     W_bifpn=EFFICIENTDET[network]['W_bifpn'],
+                     D_bifpn=EFFICIENTDET[network]['D_bifpn'],
+                     D_class=EFFICIENTDET[network]['D_class'])
+    device = "GPU" if gpu else "CPU"
+    if gpu: 
+        m = m.cuda()
+    voc_train = VOC(split=split, year=year)
+    time_used = 0
+    for i in tqdm(range(n)):
+        img = voc_train[i]['img']
+        if gpu:
+            img = img.cuda()
+        start = time.time()
+        m.detect(img.unsqueeze(0))
+        end = time.time()
+        time_used += (end-start)
+    print(f"Time used: {time_used / n * 1000:.2f}(ms) on [{device}]")
 
 
 if __name__ == "__main__":
