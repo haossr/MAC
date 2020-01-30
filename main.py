@@ -76,7 +76,7 @@ class Model(pl.LightningModule):
 
     @pl.data_loader
     def train_dataloader(self):
-        dataset = VOC(root="~/data/voc/", split="train")
+        dataset = VOC(root="data/voc/", split="train")
         return DataLoader(dataset,
                           batch_size=self.hparams.batch_size,
                           num_workers=8,
@@ -86,7 +86,7 @@ class Model(pl.LightningModule):
 
     @pl.data_loader
     def val_dataloader(self):
-        dataset = VOC(root="~/data/voc/", split="val")
+        dataset = VOC(root="data/voc/", split="val")
         #dist_sampler = torch.utils.data.distributed.DistributedSampler(dataset)
         return DataLoader(dataset,
                           batch_size=1,

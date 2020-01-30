@@ -8,6 +8,8 @@ import zipfile
 import shutil
 import json
 from tqdm import tqdm
+from thop import clever_format
+from thop import profile
 import time
 import fire
 
@@ -61,7 +63,7 @@ def detect(split="val",
                     f"{name} {confidence} {xmin:.0f} {ymin:.0f} {xmax:.0f} {ymax:.0f}\n")
 
 
-def profile(gpu=True,
+def profileMD(gpu=True,
             split="val",
             year=2012,
             n=100):
@@ -89,18 +91,31 @@ def profileED(gpu=True,
                      D_bifpn=EFFICIENTDET[network]['D_bifpn'],
                      D_class=EFFICIENTDET[network]['D_class'])
     device = "GPU" if gpu else "CPU"
+    
+    dataset = VOC(root="data/voc/", split="train")
+    img = dataset[0]['img'].unsqueeze(0)
+    annot = dataset[0]['annot'].unsqueeze(0)
     if gpu: 
         m = m.cuda()
-    voc_train = VOC(split=split, year=year)
+        img = img.cuda()
+        annot = annot.cuda()
+
+    # Count MACs
+    macs, params = profile(m, inputs=([img, annot], ))
+    macs, params = clever_format([macs, params], "%.3f")
+
+    # Profile 
     time_used = 0
     for i in tqdm(range(n)):
-        img = voc_train[i]['img']
+        img = dataset[i]['img']
         if gpu:
             img = img.cuda()
         start = time.time()
         m.detect(img.unsqueeze(0))
         end = time.time()
         time_used += (end-start)
+    print("="*40)
+    print(f"MACs: {macs}; # of params: {params}")
     print(f"Time used: {time_used / n * 1000:.2f}(ms) on [{device}]")
 
 
