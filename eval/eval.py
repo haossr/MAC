@@ -69,106 +69,10 @@ def _compute_ap(recall, precision):
     return ap
 
 
-def get_detections(batch, retinanet,
-                   num_class=20, score_threshold=0.05,
-                   max_detections=100, save_path=None):
-    """ Get the detections from the retinanet using the batch.
-    The result is a list of lists such that the size is:
-        all_detections[num_images][num_classes] =
-            detections[num_detections, 4 + num_classes]
-    # Arguments
-        batch           : The batch used to run images through the retinanet.
-        retinanet       : The retinanet to run on the images.
-        score_threshold : The score confidence threshold to use.
-        max_detections  : The maximum number of detections to use per image.
-        save_path       : The path to save the visualized detections to.
-    # Returns
-        A list of lists containing the detections for each image in the batch.
-    """
-    imgs, annots, scales = batch
-    all_detections = [[None for i in range(
-        num_class)] for j in range(len(imgs))]
-
-    with torch.no_grad():
-        for index in range(len(imgs)):
-            data = imgs[index]
-            scale = scales[index]
-
-            # run network
-            print(data, data.shape)
-            scores, labels, boxes = retinanet.detect(data.unsqueeze(dim=0))
-            print("-"*20)
-            print(f"boxes: {boxes}")
-            scores = scores.cpu().numpy()
-            labels = labels.cpu().numpy()
-            boxes = boxes.cpu().numpy()
-
-            # correct boxes for image scale
-            boxes /= scale.cpu().numpy()
-
-            # select indices which have a score above the threshold
-            indices = np.where(scores > score_threshold)[0]
-            if indices.shape[0] > 0:
-                # select those scores
-                scores = scores[indices]
-
-                # find the order with which to sort the scores
-                scores_sort = np.argsort(-scores)[:max_detections]
-
-                # select detections
-                image_boxes = boxes[indices[scores_sort], :]
-                image_scores = scores[scores_sort]
-                image_labels = labels[indices[scores_sort]]
-                image_detections = np.concatenate([image_boxes, np.expand_dims(
-                    image_scores, axis=1), np.expand_dims(image_labels, axis=1)], axis=1)
-
-                # copy detections to all_detections
-                for label in range(num_class):
-                    all_detections[index][label] = image_detections[image_detections[:, -1] == label, :-1]
-            else:
-                # copy detections to all_detections
-                for label in range(num_class):
-                    all_detections[index][label] = np.zeros((0, 5))
-
-            print('{}/{}'.format(index + 1, len(imgs)), end='\r')
-
-    return all_detections
-
-
-def get_annotations(batch, num_class=20):
-    """ Get the ground truth annotations from the batch.
-    The result is a list of lists such that the size is:
-        all_detections[num_images][num_classes] = annotations[num_detections, 5]
-    # Arguments
-        batch : The batch used to retrieve ground truth annotations.
-    # Returns
-        A list of lists containing the annotations for each image in the batch.
-    """
-    _, annots, _ = batch
-    all_annotations = [[None for i in range(
-        num_class)] for j in range(len(annots))]
-
-    for i in range(len(annots)):
-        # load the annotations
-        annotations = annots[i]
-
-        # copy detections to all_annotations
-        for label in range(num_class):
-            all_annotations[i][label] = annotations[annotations[:, 4]
-                                                    == label, :4]
-
-        print('{}/{}'.format(i + 1, len(annots)), end='\r')
-
-    return all_annotations
-
-
 def evaluate(
     all_detections,
     all_annotations,
     num_class=20,
-    iou_threshold=0.5,
-    score_threshold=0.05,
-    max_detections=100,
     save_path=None
 ):
     """ Evaluate a given batch using a given retinanet.

@@ -98,24 +98,24 @@ class EfficientDet(nn.Module):
                 m.bias.data.zero_()
         self.freeze_bn()
         self.criterion = FocalLoss()
-
-    def detect(self, inputs):
-        x = self.extract_feat(inputs)
-        outs = self.bbox_head(x)
-        classification = torch.cat([out for out in outs[0]], dim=1)
-        regression = torch.cat([out for out in outs[1]], dim=1)
-        anchors = self.anchors(inputs)
-
-        transformed_anchors = self.regressBoxes(anchors, regression)
-        transformed_anchors = self.clipBoxes(transformed_anchors, inputs)
-        return transformed_anchors, classification 
+    
+    def detect(self, inputs, scales=1.0):
+        with torch.no_grad():
+            x = self.extract_feat(inputs)
+            outs = self.bbox_head(x)
+            classification = torch.cat([out for out in outs[0]], dim=1)
+            regression = torch.cat([out for out in outs[1]], dim=1)
+            anchors = self.anchors(inputs)
+            transformed_anchors = self.regressBoxes(anchors, regression)
+            transformed_anchors = self.clipBoxes(transformed_anchors, inputs)
+        return transformed_anchors / scales, classification
 
         scores_over_thresh = (scores > self.threshold)[0, :, 0]
 
         if scores_over_thresh.sum() == 0:
             print('No boxes to NMS')
             # no boxes to NMS, just return
-            return [torch.zeros(0), torch.zeros(0), torch.zeros(0, 4)]
+            return torch.zeros(0), torch.zeros(0), torch.zeros(0, 4)
         classification = classification[:, scores_over_thresh, :]
         transformed_anchors = transformed_anchors[:, scores_over_thresh, :]
         scores = scores[:, scores_over_thresh, :]
@@ -124,7 +124,7 @@ class EfficientDet(nn.Module):
             scores[0, :, 0],
             self.iou_threshold)
         nms_scores, nms_class = classification[0, anchors_nms_idx, :].max(dim=1)
-        return [nms_scores, nms_class, transformed_anchors[0, anchors_nms_idx, :]]
+        return nms_scores, nms_class, transformed_anchors[0, anchors_nms_idx, :]
 
     def forward(self, inputs):
         inputs, annotations = inputs

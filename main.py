@@ -39,10 +39,11 @@ class Model(pl.LightningModule):
         return {'loss': loss, 'log': {'train_loss': loss}}
 
     def validation_step(self, batch, batch_nb):
-        detections = get_detections(batch, self.model)
-        annotations = get_annotations(batch)
-        with torch.no_grad():
-            loss = self.forward(batch)
+        """ Generate the anchor box and NMS """
+        images, annots, scales = x
+        boxes, probs = self.model.detect(images, scales)
+        detections = nms_batch(boxes, probs)
+
         return {'val_loss': loss,
                 'detections': detections,
                 'annotations': annotations}
@@ -51,8 +52,8 @@ class Model(pl.LightningModule):
         avg_loss = torch.stack([x['val_loss'] for x in outputs]).mean()
         detections = np.stack([x['detections'] for x in outputs])
         annotations = np.stack([x['annotations'] for x in outputs])
-        print(f"detections: {detections}")
-        mAP, _ = evaluate(detections, annotations)
+        #print(f"detections: {detections}")
+        mAP = evaluate(detections, annotations)
         return {'val_loss': avg_loss,
                 'mAP': mAP,
                 'log': {'_val_loss': avg_loss},
@@ -106,7 +107,7 @@ def train(save_dir="./sandbox",
           pretrained=True,
           num_class=20,
           log_save_interval=1,
-          distributed_backend="ddp",
+          distributed_backend="dp",
           gradient_clip_val=0.5,
           max_nb_epochs=3,
           train_percent_check=1,
