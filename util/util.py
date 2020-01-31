@@ -63,3 +63,4 @@ def init_exp_folder(args):
     # ln -s for tb
     os.symlink(join(exp_path, LIGHTNING_TB_PATH), exp_tb_path)
     os.symlink(exp_tb_path, global_tb_exp_path)
+

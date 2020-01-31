@@ -1,6 +1,7 @@
 import numpy as np
 import torch
 
+from .constants import *
 
 def nms(boxes, probs, threshold=0.01, iou_threshold=0.5):
     """
@@ -49,6 +50,7 @@ def nms_batch(boxes, probs, threshold=0.01, iou_threshold=0.5):
     """
     B = boxes.shape[0]
     detections = [nms_tensor(b, p, threshold, iou_threshold) for b, p in zip(boxes, probs)]
+    return detections
 
 
 def nms_tensor(boxes, probs, threshold=0.01, iou_threshold=0.5):
@@ -64,7 +66,7 @@ def nms_tensor(boxes, probs, threshold=0.01, iou_threshold=0.5):
     if boxes.size == 0:
         return []
 
-    C = probs.shape[1]
+    num_class = probs.shape[1]
 
     scores, preds = torch.max(probs, axis=1, keepdims=False)
     selected = (scores > threshold)

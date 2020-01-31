@@ -118,3 +118,6 @@ log
 # Sandbox
 /sandbox
 /~
+.vscode/
+test.sh
+dataset/

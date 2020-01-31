@@ -9,7 +9,7 @@ from .augmentation import (Resizer, Normalizer,
 
 
 class VOC(torch.utils.data.Dataset):
-    def __init__(self, root="~/data/voc/",
+    def __init__(self, root="dataset/voc/",
                  year=2007, split="train", transforms=None):
         self._data = VOCDetection(root=root,
                                   image_set=split,
